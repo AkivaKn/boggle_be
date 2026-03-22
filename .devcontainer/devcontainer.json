@@ -1,0 +1,21 @@
+{
+	"name": "Gin Boggle API",
+	"dockerComposeFile": "docker-compose.yml",
+	"service": "app",
+	"workspaceFolder": "/workspace",
+	"features": {
+		"ghcr.io/devcontainers/features/go:1": {
+			"version": "1.26"
+		}
+	},
+	"customizations": {
+		"vscode": {
+			"extensions":[
+				"golang.go",
+				"cweijan.vscode-postgresql-client2"
+			]
+		}
+	},
+	"forwardPorts": [8080],
+	"postCreateCommand": "go mod tidy"
+}

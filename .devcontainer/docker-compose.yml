@@ -1,0 +1,30 @@
+version: '3.8'
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
+    volumes:
+      - ../:/workspace:cached
+    command: sleep infinity
+    environment:
+      - DATABASE_URL=postgres://devuser:devpassword@db:5432/boggle?sslmode=disable
+      - ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+    depends_on:
+      - db
+
+  db:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: devuser
+      POSTGRES_PASSWORD: devpassword
+      POSTGRES_DB: boggle
+    ports:
+      - "5435:5432" # Uses 5435 locally to prevent conflicts with your Linux host
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+      - ../migrations:/docker-entrypoint-initdb.d # Auto-runs SQL migrations on first start
+
+volumes:
+  pg-data:
