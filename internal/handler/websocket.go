@@ -1,9 +1,9 @@
 package handler
 
 import (
+	"github.com/gorilla/websocket"
 	"log"
 	"sync"
-	"github.com/gorilla/websocket"
 )
 
 // wsManager handles active websocket connections

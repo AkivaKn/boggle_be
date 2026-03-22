@@ -3,6 +3,7 @@ package handler
 import (
 	"log"
 	"net/http"
+	"strings"
 
 	"boggle-api/internal/service"
 
@@ -10,20 +11,44 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-var upgrader = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool { return true },
-}
-
 type RoomHandler struct {
-	service service.RoomService
-	ws      *wsManager
+	service        service.RoomService
+	ws             *wsManager
+	allowedOrigins []string
+	upgrader       websocket.Upgrader
 }
 
-func NewRoomHandler(service service.RoomService) *RoomHandler {
-	return &RoomHandler{
-		service: service,
-		ws:      newWSManager(),
+func NewRoomHandler(service service.RoomService, origins []string) *RoomHandler {
+	h := &RoomHandler{
+		service:        service,
+		ws:             newWSManager(),
+		allowedOrigins: origins,
 	}
+
+	h.upgrader = websocket.Upgrader{
+		ReadBufferSize:  1024,
+		WriteBufferSize: 1024,
+		CheckOrigin:     h.checkOrigin,
+	}
+
+	return h
+}
+
+func (h *RoomHandler) checkOrigin(r *http.Request) bool {
+	origin := r.Header.Get("Origin")
+
+	if origin == "" {
+		return true
+	}
+
+	for _, allowed := range h.allowedOrigins {
+		if strings.TrimSuffix(origin, "/") == strings.TrimSuffix(allowed, "/") {
+			return true
+		}
+	}
+
+	log.Printf("WebSocket Rejected: Unauthorized Origin: %s", origin)
+	return false
 }
 
 func (h *RoomHandler) GenerateBoard(c *gin.Context) {
@@ -52,7 +77,7 @@ func (h *RoomHandler) CreateAndJoinRoomWS(c *gin.Context) {
 		return
 	}
 
-	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
+	conn, err := h.upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		log.Println("WS Upgrade Error:", err)
 		return
@@ -83,7 +108,7 @@ func (h *RoomHandler) JoinRoomWS(c *gin.Context) {
 		return
 	}
 
-	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
+	conn, err := h.upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		log.Println("WS Upgrade Error:", err)
 		return
@@ -102,7 +127,7 @@ func (h *RoomHandler) JoinRoomWS(c *gin.Context) {
 		state["board"] = board.Letters
 		state["ends_at"] = board.EndsAt
 	}
-
+	conn.SetReadLimit(4096)
 	conn.WriteJSON(state)
 
 	h.ws.Broadcast(roomID, gin.H{

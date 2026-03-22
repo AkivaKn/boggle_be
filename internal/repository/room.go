@@ -11,7 +11,7 @@ import (
 type RoomRepository interface {
 	CreateRoom(ctx context.Context, room *models.Room) error
 	GetRoom(ctx context.Context, id string) (*models.Room, error)
-	
+
 	CreateBoard(ctx context.Context, board *models.Board) error
 	GetLatestBoard(ctx context.Context, roomID string) (*models.Board, error)
 }

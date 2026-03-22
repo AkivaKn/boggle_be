@@ -9,7 +9,7 @@ func (s *Server) RegisterRoutes() {
 
 	api := s.engine.Group("/api")
 	{
-		api.POST("/rooms/:id/boards", s.roomHandler.GenerateBoard)
+		api.POST("/rooms/:id/boards", s.strictLimit, s.roomHandler.GenerateBoard)
 	}
 
 	ws := s.engine.Group("/ws")
