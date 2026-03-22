@@ -68,9 +68,14 @@ func NewServer() *Server {
 	roomRepo := repository.NewRoomRepository(db)
 	roomService := service.NewRoomService(roomRepo)
 	roomHandler := handler.NewRoomHandler(roomService)
-
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = ":8080"
+	} else {
+		port = "0.0.0.0:" + port
+	}
 	srv := &Server{
-		port:        ":8080",
+		port:        port,
 		engine:      router,
 		db:          db,
 		roomHandler: roomHandler,
@@ -87,6 +92,6 @@ func (s *Server) Start() error {
 }
 
 func (s *Server) Close() {
-		log.Println("Closing database connection...")
-		s.db.Close()
+	log.Println("Closing database connection...")
+	s.db.Close()
 }
