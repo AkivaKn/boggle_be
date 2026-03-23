@@ -88,7 +88,10 @@ func (h *RoomHandler) CreateAndJoinRoomWS(c *gin.Context) {
 		log.Println("WS Upgrade Error:", err)
 		return
 	}
-	defer conn.Close()
+	defer func() {
+		log.Println("JoinRoomWS: Closing connection for room", room.ID)
+		conn.Close()
+	}()
 
 	h.ws.AddClient(room.ID, conn)
 	defer h.ws.RemoveClient(room.ID, conn)
@@ -99,7 +102,9 @@ func (h *RoomHandler) CreateAndJoinRoomWS(c *gin.Context) {
 	})
 
 	for {
-		if _, _, err := conn.ReadMessage(); err != nil {
+		_, _, err := conn.ReadMessage()
+		if err != nil {
+			log.Println("JoinRoomWS: ReadMessage error:", err)
 			break
 		}
 	}
@@ -119,7 +124,10 @@ func (h *RoomHandler) JoinRoomWS(c *gin.Context) {
 		log.Println("WS Upgrade Error:", err)
 		return
 	}
-	defer conn.Close()
+	defer func() {
+		log.Println("JoinRoomWS: Closing connection for room", roomID)
+		conn.Close()
+	}()
 
 	h.ws.AddClient(roomID, conn)
 	defer h.ws.RemoveClient(roomID, conn)
@@ -147,7 +155,9 @@ func (h *RoomHandler) JoinRoomWS(c *gin.Context) {
 	})
 
 	for {
-		if _, _, err := conn.ReadMessage(); err != nil {
+		_, _, err := conn.ReadMessage()
+		if err != nil {
+			log.Println("JoinRoomWS: ReadMessage error:", err)
 			break
 		}
 	}
