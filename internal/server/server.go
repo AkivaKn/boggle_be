@@ -11,8 +11,8 @@ import (
 	"boggle-api/internal/repository"
 	"boggle-api/internal/service"
 
-	"github.com/gin-contrib/cors"
-	"github.com/gin-gonic/contrib/secure"
+	// "github.com/gin-contrib/cors"
+	// "github.com/gin-gonic/contrib/secure"
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
 	"github.com/ulule/limiter/v3"
@@ -68,21 +68,21 @@ func NewServer() *Server {
 		origins = strings.Split(allowedOriginsEnv, ",")
 	}
 
-	router.Use(cors.New(cors.Config{
-		AllowOrigins:     origins,
-		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
-		ExposeHeaders:    []string{"Content-Length"},
-		AllowCredentials: true,
-		MaxAge:           12 * time.Hour,
-	}))
-	router.Use(secure.Secure(secure.Options{
-		AllowedHosts:       []string{os.Getenv("BACKEND_URL"), "localhost:8080"},
-		STSSeconds:         315360000,
-		FrameDeny:          true,
-		ContentTypeNosniff: true,
-		BrowserXssFilter:   true,
-	}))
+	// router.Use(cors.New(cors.Config{
+	// 	AllowOrigins:     origins,
+	// 	AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+	// 	AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
+	// 	ExposeHeaders:    []string{"Content-Length"},
+	// 	AllowCredentials: true,
+	// 	MaxAge:           12 * time.Hour,
+	// }))
+	// router.Use(secure.Secure(secure.Options{
+	// 	AllowedHosts:       []string{os.Getenv("BACKEND_URL"), "localhost:8080"},
+	// 	STSSeconds:         315360000,
+	// 	FrameDeny:          true,
+	// 	ContentTypeNosniff: true,
+	// 	BrowserXssFilter:   true,
+	// }))
 	roomRepo := repository.NewRoomRepository(db)
 	roomService := service.NewRoomService(roomRepo)
 	roomHandler := handler.NewRoomHandler(roomService, origins)
