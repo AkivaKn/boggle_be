@@ -2,8 +2,8 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"math/rand"
-	"strings"
 	"time"
 
 	"boggle-api/internal/models"
@@ -50,7 +50,7 @@ func (s *roomService) GenerateBoard(ctx context.Context, roomID string) (*models
 	board := &models.Board{
 		ID:        id.String(),
 		RoomID:    roomID,
-		Letters:   generateBoggleBoard(), // your dice logic
+		Cells:     generateBoggleBoard(), 
 		EndsAt:    time.Now().UTC().Add(3 * time.Minute),
 		CreatedAt: time.Now().UTC(),
 	}
@@ -75,5 +75,16 @@ func generateBoggleBoard() string {
 	rand.Shuffle(len(faces), func(i, j int) {
 		faces[i], faces[j] = faces[j], faces[i]
 	})
-	return strings.Join(faces, "")
+
+	var board []models.BoardCell
+	for _, letter := range faces {
+		orientation := []int{0, 90, 180, 270}[rand.Intn(4)]
+		board = append(board, models.BoardCell{
+			Letter:      letter,
+			Orientation: orientation,
+		})
+	}
+
+	data, _ := json.Marshal(board)
+	return string(data)
 }

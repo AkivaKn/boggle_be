@@ -1,10 +1,12 @@
 package handler
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
 	"strings"
 
+	"boggle-api/internal/models"
 	"boggle-api/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -60,10 +62,14 @@ func (h *RoomHandler) GenerateBoard(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate board"})
 		return
 	}
-
+	var cells []models.BoardCell
+	if err := json.Unmarshal([]byte(board.Cells), &cells); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse board cells"})
+		return
+	}
 	h.ws.Broadcast(roomID, gin.H{
 		"event":   "new_board",
-		"board":   board.Letters,
+		"board":   cells,
 		"ends_at": board.EndsAt,
 	})
 
@@ -124,7 +130,12 @@ func (h *RoomHandler) JoinRoomWS(c *gin.Context) {
 	}
 
 	if board != nil {
-		state["board"] = board.Letters
+		var cells []models.BoardCell
+		if err := json.Unmarshal([]byte(board.Cells), &cells); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse board cells"})
+			return
+		}
+		state["board"] = cells
 		state["ends_at"] = board.EndsAt
 	}
 	conn.SetReadLimit(4096)

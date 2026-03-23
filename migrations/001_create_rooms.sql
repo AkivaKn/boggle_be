@@ -9,7 +9,7 @@ CREATE TABLE rooms (
 CREATE TABLE boards (
     id UUID PRIMARY KEY,
     room_id UUID REFERENCES rooms(id) ON DELETE CASCADE,
-    letters VARCHAR(16) NOT NULL,
+    cells JSONB NOT NULL,
     ends_at TIMESTAMP NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
