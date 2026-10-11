@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strings"
 
-	"boggle-api/internal/models"
-	"boggle-api/internal/service"
+	"boggle-api/internal/boggle/models"
+	"boggle-api/internal/boggle/service"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"

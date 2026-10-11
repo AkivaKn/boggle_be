@@ -3,7 +3,7 @@ package repository
 import (
 	"context"
 
-	"boggle-api/internal/models"
+	"boggle-api/internal/boggle/models"
 
 	"github.com/vingarcia/ksql"
 )

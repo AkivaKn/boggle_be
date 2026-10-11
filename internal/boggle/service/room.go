@@ -6,8 +6,8 @@ import (
 	"math/rand"
 	"time"
 
-	"boggle-api/internal/models"
-	"boggle-api/internal/repository"
+	"boggle-api/internal/boggle/models"
+	"boggle-api/internal/boggle/repository"
 
 	"github.com/google/uuid"
 )
