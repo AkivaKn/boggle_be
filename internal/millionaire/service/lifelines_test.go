@@ -263,8 +263,8 @@ func TestLifelinesSwitchFlow(t *testing.T) {
 		Options  string `ksql:"shuffled_options"`
 	}
 	if err := db.QueryOne(ctx, &row,
-		"SELECT questions.question AS question, rq.shuffled_options AS shuffled_options"+
-			" FROM room_questions rq JOIN questions ON questions.id = rq.question_id"+
+		"SELECT millionaire_questions.question AS question, rq.shuffled_options AS shuffled_options"+
+			" FROM millionaire_room_questions rq JOIN millionaire_questions ON millionaire_questions.id = rq.question_id"+
 			" WHERE rq.room_id = $1 AND rq.level = 1 AND rq.variant = 2",
 		room.ID); err != nil {
 		t.Fatalf("reading variant-2 row: %v", err)
@@ -327,7 +327,7 @@ func TestLifelinesSwitchFlow(t *testing.T) {
 		Idx int `ksql:"idx"`
 	}
 	if err := db.QueryOne(ctx, &cidx,
-		"SELECT shuffled_correct_index AS idx FROM room_questions WHERE room_id = $1 AND level = 1 AND variant = 2", room.ID); err != nil {
+		"SELECT shuffled_correct_index AS idx FROM millionaire_room_questions WHERE room_id = $1 AND level = 1 AND variant = 2", room.ID); err != nil {
 		t.Fatal(err)
 	}
 	variant2Correct = cidx.Idx
@@ -341,7 +341,7 @@ func TestLifelinesSwitchFlow(t *testing.T) {
 		Idx int `ksql:"idx"`
 	}
 	if err := db.QueryOne(ctx, &p1idx,
-		"SELECT shuffled_correct_index AS idx FROM room_questions WHERE room_id = $1 AND level = 1 AND variant = 1", room.ID); err != nil {
+		"SELECT shuffled_correct_index AS idx FROM millionaire_room_questions WHERE room_id = $1 AND level = 1 AND variant = 1", room.ID); err != nil {
 		t.Fatal(err)
 	}
 	if p1idx.Idx != shuffledCorrectIndex(t, g, room.ID, 1) {

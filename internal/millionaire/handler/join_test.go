@@ -83,13 +83,13 @@ func newGameTestServer(t *testing.T, budgets map[string]time.Duration) (db ksql.
 	cleanupRooms = func(ids ...string) {
 		ctx := context.Background()
 		for _, id := range ids {
-			if _, err := db.Exec(ctx, "DELETE FROM room_questions WHERE room_id = $1", id); err != nil {
+			if _, err := db.Exec(ctx, "DELETE FROM millionaire_room_questions WHERE room_id = $1", id); err != nil {
 				t.Logf("cleanup: deleting room_questions of %s: %v", id, err)
 			}
-			if _, err := db.Exec(ctx, "DELETE FROM players WHERE room_id = $1", id); err != nil {
+			if _, err := db.Exec(ctx, "DELETE FROM millionaire_players WHERE room_id = $1", id); err != nil {
 				t.Logf("cleanup: deleting players of %s: %v", id, err)
 			}
-			if _, err := db.Exec(ctx, "DELETE FROM rooms WHERE id = $1", id); err != nil {
+			if _, err := db.Exec(ctx, "DELETE FROM millionaire_rooms WHERE id = $1", id); err != nil {
 				t.Logf("cleanup: deleting room %s: %v", id, err)
 			}
 		}
@@ -530,7 +530,7 @@ func TestCreateRoomWSCleansUpOrphanRoom(t *testing.T) {
 		var counts []struct {
 			N int `ksql:"count"`
 		}
-		if err := db.Query(context.Background(), &counts, "SELECT count(*) FROM rooms r WHERE NOT EXISTS (SELECT 1 FROM players p WHERE p.room_id = r.id)"); err != nil {
+		if err := db.Query(context.Background(), &counts, "SELECT count(*) FROM millionaire_rooms r WHERE NOT EXISTS (SELECT 1 FROM millionaire_players p WHERE p.room_id = r.id)"); err != nil {
 			t.Fatalf("counting zero-player rooms: %v", err)
 		}
 		if len(counts) != 1 {

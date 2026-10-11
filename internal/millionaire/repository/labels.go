@@ -59,7 +59,7 @@ func NewLabelRepository(db ksql.Provider) LabelRepository {
 func (r *labelRepo) ListUnrated(ctx context.Context, limit int) ([]models.Question, error) {
 	var questions []models.Question
 	err := r.db.Query(ctx, &questions,
-		"SELECT * FROM questions WHERE strength IS NULL ORDER BY id LIMIT $1", limit)
+		"SELECT * FROM millionaire_questions WHERE strength IS NULL ORDER BY id LIMIT $1", limit)
 	return questions, err
 }
 
@@ -72,7 +72,7 @@ func (r *labelRepo) ListUnratedFiltered(ctx context.Context, limit int, source s
 	if source == "any" {
 		source = ""
 	}
-	query := "SELECT * FROM questions WHERE strength IS NULL"
+	query := "SELECT * FROM millionaire_questions WHERE strength IS NULL"
 	args := []interface{}{}
 	if source != "" {
 		args = append(args, source)
@@ -104,7 +104,7 @@ func (r *labelRepo) ListUnratedFiltered(ctx context.Context, limit int, source s
 func (r *labelRepo) ListRatedSample(ctx context.Context, limit int) ([]models.Question, error) {
 	var questions []models.Question
 	err := r.db.Query(ctx, &questions,
-		"SELECT * FROM questions WHERE strength IS NOT NULL ORDER BY random() LIMIT $1", limit)
+		"SELECT * FROM millionaire_questions WHERE strength IS NOT NULL ORDER BY random() LIMIT $1", limit)
 	return questions, err
 }
 
@@ -113,7 +113,7 @@ func (r *labelRepo) CountUnrated(ctx context.Context) (int, error) {
 		Count int `ksql:"count"`
 	}
 	err := r.db.QueryOne(ctx, &row,
-		"SELECT count(*) AS count FROM questions WHERE strength IS NULL")
+		"SELECT count(*) AS count FROM millionaire_questions WHERE strength IS NULL")
 	return row.Count, err
 }
 
@@ -122,7 +122,7 @@ func (r *labelRepo) CountRated(ctx context.Context) (int, error) {
 		Count int `ksql:"count"`
 	}
 	err := r.db.QueryOne(ctx, &row,
-		"SELECT count(*) AS count FROM questions WHERE strength IS NOT NULL")
+		"SELECT count(*) AS count FROM millionaire_questions WHERE strength IS NOT NULL")
 	return row.Count, err
 }
 
@@ -132,13 +132,13 @@ func (r *labelRepo) ListByID(ctx context.Context, ids []string) ([]models.Questi
 	}
 	var questions []models.Question
 	err := r.db.Query(ctx, &questions,
-		"SELECT * FROM questions WHERE id::text = ANY($1::text[]) ORDER BY id", ids)
+		"SELECT * FROM millionaire_questions WHERE id::text = ANY($1::text[]) ORDER BY id", ids)
 	return questions, err
 }
 
 func (r *labelRepo) SetStrength(ctx context.Context, questionID string, strength int) error {
 	_, err := r.db.Exec(ctx,
-		"UPDATE questions SET strength = $2::int WHERE id = $1", questionID, strength)
+		"UPDATE millionaire_questions SET strength = $2::int WHERE id = $1", questionID, strength)
 	if err != nil {
 		return err
 	}
@@ -147,7 +147,7 @@ func (r *labelRepo) SetStrength(ctx context.Context, questionID string, strength
 
 func (r *labelRepo) ResetStrength(ctx context.Context, questionID string) error {
 	_, err := r.db.Exec(ctx,
-		"UPDATE questions SET strength = NULL WHERE id = $1", questionID)
+		"UPDATE millionaire_questions SET strength = NULL WHERE id = $1", questionID)
 	if err != nil {
 		return err
 	}
@@ -161,7 +161,7 @@ func (r *labelRepo) mustExist(ctx context.Context, questionID, op string) error 
 		ID string `ksql:"id"`
 	}{}
 	err := r.db.QueryOne(ctx, &row,
-		"SELECT id FROM questions WHERE id = $1", questionID)
+		"SELECT id FROM millionaire_questions WHERE id = $1", questionID)
 	if err != nil {
 		return fmt.Errorf("%s: question %s not found", op, questionID)
 	}
@@ -183,7 +183,7 @@ FROM (
            (source = 'otqa' AND category = ANY($1::text[]))
                OR (source = 'opentdb'
                    AND (category LIKE 'Entertainment:%' OR category = 'Celebrities')) AS cultural
-    FROM questions
+    FROM millionaire_questions
     WHERE strength IS NOT NULL
 ) ranks,
 LATERAL (SELECT (FLOOR(((rn - 1) * 15)::numeric / GREATEST(n, 1))::int + 1) AS band) b

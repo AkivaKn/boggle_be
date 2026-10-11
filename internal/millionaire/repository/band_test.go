@@ -56,17 +56,17 @@ func openLabelDB(t *testing.T) ksql.Provider {
 	t.Cleanup(func() { db.Close() })
 
 	ctx := context.Background()
-	// Temp clone: every `FROM/INTO questions` in THIS session now resolves
+	// Temp clone: every `FROM/INTO millionaire_questions` in THIS session now resolves
 	// to the session-local table. LIKE copies columns + CHECK/NOT NULL
 	// constraints (FKs are not copied — none needed); the currently-RATED
 	// rows are seeded in so the tests can derive windows from an observed
 	// corpus exactly as they would against the live data.
 	if _, err := db.Exec(ctx,
-		"CREATE TEMP TABLE questions (LIKE public.questions INCLUDING ALL)"); err != nil {
+		"CREATE TEMP TABLE millionaire_questions (LIKE public.millionaire_questions INCLUDING ALL)"); err != nil {
 		t.Fatalf("creating the temp questions clone: %v", err)
 	}
 	if _, err := db.Exec(ctx,
-		"INSERT INTO questions SELECT * FROM public.questions WHERE strength IS NOT NULL"); err != nil {
+		"INSERT INTO millionaire_questions SELECT * FROM public.millionaire_questions WHERE strength IS NOT NULL"); err != nil {
 		t.Fatalf("seeding the temp clone with the rated corpus: %v", err)
 	}
 	return db
@@ -143,7 +143,7 @@ func listRated(t *testing.T, db ksql.Provider) []models.Question {
 	t.Helper()
 	var all []models.Question
 	if err := db.Query(context.Background(), &all,
-		"SELECT * FROM questions WHERE strength IS NOT NULL"); err != nil {
+		"SELECT * FROM millionaire_questions WHERE strength IS NOT NULL"); err != nil {
 		t.Fatalf("listing rated rows: %v", err)
 	}
 	return all

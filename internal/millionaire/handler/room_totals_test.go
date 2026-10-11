@@ -34,7 +34,7 @@ func TestRoomStateCarriesSessionTotals(t *testing.T) {
 	// Seed one seat's census straight into the DB (three completed runs,
 	// one won, £1,500 total, best £500 at level 9).
 	if _, err := db.Exec(context.Background(),
-		"INSERT INTO room_totals (id, room_id, seat, games_played, games_won, total_money, best_level, best_amount) "+
+		"INSERT INTO millionaire_room_totals (id, room_id, seat, games_played, games_won, total_money, best_level, best_amount) "+
 			"VALUES ('11111111-1111-4111-8111-111111111111', $1, 1, 3, 1, 1500, 9, 500)",
 		roomID); err != nil {
 		t.Fatalf("seeding a room_totals row: %v", err)

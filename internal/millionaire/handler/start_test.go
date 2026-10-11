@@ -98,7 +98,7 @@ func roomStatusOf(t *testing.T, db ksql.DB, roomID string) (string, error) {
 		Status string `ksql:"status"`
 	}
 	if err := db.QueryOne(context.Background(), &row,
-		"SELECT status FROM rooms WHERE id = $1", roomID); err != nil {
+		"SELECT status FROM millionaire_rooms WHERE id = $1", roomID); err != nil {
 		return "", err
 	}
 	return row.Status, nil
@@ -111,7 +111,7 @@ func roomQuestionCount(t *testing.T, db ksql.DB, roomID string) int {
 		N int `ksql:"n"`
 	}
 	if err := db.QueryOne(context.Background(), &row,
-		"SELECT count(*) AS n FROM room_questions WHERE room_id = $1", roomID); err != nil {
+		"SELECT count(*) AS n FROM millionaire_room_questions WHERE room_id = $1", roomID); err != nil {
 		t.Fatalf("counting room_questions: %v", err)
 	}
 	return row.N

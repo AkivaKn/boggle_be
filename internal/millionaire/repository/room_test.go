@@ -56,7 +56,7 @@ func TestRoomInsertExplicitFieldsPassesChecks(t *testing.T) {
 		t.Fatalf("insert with explicit Mode/Status/CreatedAt failed: %v", err)
 	}
 	defer func() {
-		_, _ = db.Exec(ctx, "DELETE FROM rooms WHERE id = $1", room.ID)
+		_, _ = db.Exec(ctx, "DELETE FROM millionaire_rooms WHERE id = $1", room.ID)
 	}()
 
 	got, err := repo.GetRoom(ctx, room.ID)
@@ -88,7 +88,7 @@ func TestRoomInsertZeroStatusTripsCheckConstraint(t *testing.T) {
 	}
 	err := repo.CreateRoom(ctx, room)
 	if err == nil {
-		_, _ = db.Exec(ctx, "DELETE FROM rooms WHERE id = $1", room.ID)
+		_, _ = db.Exec(ctx, "DELETE FROM millionaire_rooms WHERE id = $1", room.ID)
 		t.Fatal("insert with zero-value Status unexpectedly succeeded; expected CHECK violation")
 	}
 	t.Logf("zero-value Status rejected as expected: %v", err)

@@ -8,8 +8,8 @@ type Room struct {
 }
 
 type BoardCell struct {
-    Letter      string `json:"letter"`
-    Orientation int    `json:"orientation"`
+	Letter      string `json:"letter"`
+	Orientation int    `json:"orientation"`
 }
 
 type Board struct {

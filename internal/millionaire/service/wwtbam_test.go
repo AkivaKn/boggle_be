@@ -581,7 +581,7 @@ func TestWWTBAMPoolGate50RoomsDistribution(t *testing.T) {
 			Category string `ksql:"category"`
 		}
 		if err := db.Query(ctx, &rows,
-			"SELECT id, source, strength, category FROM questions WHERE id::text = ANY($1::text[])", ids); err != nil {
+			"SELECT id, source, strength, category FROM millionaire_questions WHERE id::text = ANY($1::text[])", ids); err != nil {
 			t.Fatalf("room %d: contract read failed: %v", room, err)
 		}
 		if len(rows) != len(ids) {

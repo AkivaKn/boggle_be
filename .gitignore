@@ -1,1 +1,14 @@
+# Local/editor cruft
 *debug
+.DS_Store
+
+# Labelling working directory (batch inputs/outputs are per-run artefacts;
+# the tool that produces them is cmd/label, tracked).
+/label/*
+!/label/.gitkeep
+
+# Runtime build output
+/main
+/dist
+# Local smoke-test binary (M-A1)
+/bin

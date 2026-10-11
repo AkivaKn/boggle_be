@@ -40,19 +40,19 @@ func (r *roomQuestionRepo) InsertBatch(ctx context.Context, batch []models.RoomQ
 // DeleteByRoom removes every layout row of the room (see the interface
 // comment). Plain SQL — ksql's Delete is single-PK keyed.
 func (r *roomQuestionRepo) DeleteByRoom(ctx context.Context, roomID string) error {
-	_, err := r.db.Exec(ctx, "DELETE FROM room_questions WHERE room_id = $1", roomID)
+	_, err := r.db.Exec(ctx, "DELETE FROM millionaire_room_questions WHERE room_id = $1", roomID)
 	return err
 }
 
 func (r *roomQuestionRepo) GetByRoomID(ctx context.Context, roomID string) ([]models.RoomQuestion, error) {
 	var rqs []models.RoomQuestion
-	err := r.db.Query(ctx, &rqs, "SELECT * FROM room_questions WHERE room_id = $1 ORDER BY level, variant", roomID)
+	err := r.db.Query(ctx, &rqs, "SELECT * FROM millionaire_room_questions WHERE room_id = $1 ORDER BY level, variant", roomID)
 	return rqs, err
 }
 
 func (r *roomQuestionRepo) GetByRoomIDAndLevel(ctx context.Context, roomID string, level int) ([]models.RoomQuestion, error) {
 	var rqs []models.RoomQuestion
 	err := r.db.Query(ctx, &rqs,
-		"SELECT * FROM room_questions WHERE room_id = $1 AND level = $2 ORDER BY variant", roomID, level)
+		"SELECT * FROM millionaire_room_questions WHERE room_id = $1 AND level = $2 ORDER BY variant", roomID, level)
 	return rqs, err
 }

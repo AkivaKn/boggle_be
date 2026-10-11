@@ -37,6 +37,7 @@ import (
 //   - general: 100/min on each game's REST group;
 //   - strict: 10/min on the rate-sensitive gameplay WRITES (Millionaire's
 //     answer/walk/lifeline/continue/start/replay; Boggle's board generate).
+//
 // Both are process-local in-memory stores: counters reset on restart and are
 // not shared across replicas (the single-process deployment assumption both
 // games already documented).

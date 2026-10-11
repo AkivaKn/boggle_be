@@ -124,7 +124,7 @@ func TestCreateRoomCodesDuelsDistinctSoloEmpty(t *testing.T) {
 		}
 		t.Cleanup(func() {
 			dctx := context.Background()
-			_, _ = db.Exec(dctx, "DELETE FROM rooms WHERE id = $1", room.ID)
+			_, _ = db.Exec(dctx, "DELETE FROM millionaire_rooms WHERE id = $1", room.ID)
 		})
 		if !roomCodeFormatRe.MatchString(room.Code) {
 			t.Fatalf("duel room %d code = %q, want WORD-WORD-DD", i, room.Code)
@@ -144,7 +144,7 @@ func TestCreateRoomCodesDuelsDistinctSoloEmpty(t *testing.T) {
 		}
 		t.Cleanup(func() {
 			dctx := context.Background()
-			_, _ = db.Exec(dctx, "DELETE FROM rooms WHERE id = $1", room.ID)
+			_, _ = db.Exec(dctx, "DELETE FROM millionaire_rooms WHERE id = $1", room.ID)
 		})
 		if room.Code != "" {
 			t.Fatalf("solo room %d code = %q, want ''", i, room.Code)

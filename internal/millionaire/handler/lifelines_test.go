@@ -266,7 +266,7 @@ func variantRow(t *testing.T, db ksql.DB, roomID string, level, variant int) (st
 		Options  string `ksql:"shuffled_options"`
 	}
 	if err := db.QueryOne(context.Background(), &row,
-		"SELECT questions.question AS question, room_questions.shuffled_options AS shuffled_options FROM room_questions JOIN questions ON questions.id = room_questions.question_id WHERE room_questions.room_id = $1 AND room_questions.level = $2 AND room_questions.variant = $3",
+		"SELECT millionaire_questions.question AS question, millionaire_room_questions.shuffled_options AS shuffled_options FROM millionaire_room_questions JOIN millionaire_questions ON millionaire_questions.id = millionaire_room_questions.question_id WHERE millionaire_room_questions.room_id = $1 AND millionaire_room_questions.level = $2 AND millionaire_room_questions.variant = $3",
 		roomID, level, variant); err != nil {
 		t.Fatalf("reading variant row: %v", err)
 	}
@@ -284,7 +284,7 @@ func variantCorrect(t *testing.T, db ksql.DB, roomID string, level, variant int)
 		Idx int `ksql:"idx"`
 	}
 	if err := db.QueryOne(context.Background(), &row,
-		"SELECT shuffled_correct_index AS idx FROM room_questions WHERE room_id = $1 AND level = $2 AND variant = $3",
+		"SELECT shuffled_correct_index AS idx FROM millionaire_room_questions WHERE room_id = $1 AND level = $2 AND variant = $3",
 		roomID, level, variant); err != nil {
 		t.Fatalf("reading variant correct index: %v", err)
 	}
@@ -315,7 +315,7 @@ func assertLifelinesLeft(t *testing.T, db ksql.DB, roomID string, seat int, want
 		LL string `ksql:"ll"`
 	}
 	if err := db.QueryOne(context.Background(), &row,
-		"SELECT lifelines_left AS ll FROM players WHERE room_id = $1 AND seat = $2", roomID, seat); err != nil {
+		"SELECT lifelines_left AS ll FROM millionaire_players WHERE room_id = $1 AND seat = $2", roomID, seat); err != nil {
 		t.Fatalf("reading lifelines_left (seat %d): %v", seat, err)
 	}
 	var got []string

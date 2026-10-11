@@ -1916,7 +1916,7 @@ var validLifelines = map[string]bool{"fifty_fifty": true, "audience": true, "swi
 // ONE-USE-ENFORCEMENT — ATOMIC (M5-review finding 2): the consumption is a
 // single guarded SQL update through repository.SpendLifeline
 //
-//	UPDATE players SET lifelines_left = lifelines_left - '"x"'::jsonb
+//	UPDATE millionaire_players SET lifelines_left = lifelines_left - '"x"'::jsonb
 //	WHERE id = $1 AND lifelines_left @> '"x"'::jsonb
 //
 // whose rows-affected decide the outcome: 0 rows → 409 ("... already used

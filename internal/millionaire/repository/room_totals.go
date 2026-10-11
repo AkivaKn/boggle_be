@@ -13,7 +13,7 @@ import (
 // accumulation is a single hand-written upsert (below) so the += and
 // greater-of math happens ATOMICALLY inside Postgres, not read-modify-
 // write in Go.
-var RoomTotalsTable = ksql.NewTable("room_totals")
+var RoomTotalsTable = ksql.NewTable("millionaire_room_totals")
 
 type RoomTotalsRepository interface {
 	// AccumulateSeat adds ONE completed run of one seat into the room's
@@ -46,15 +46,15 @@ func NewRoomTotalsRepository(db ksql.Provider) RoomTotalsRepository {
 // Constant literals only — no untrusted interpolation.
 func (r *roomTotalsRepo) AccumulateSeat(ctx context.Context, t *models.RoomTotal) error {
 	_, err := r.db.Exec(ctx, `
-		INSERT INTO room_totals
+		INSERT INTO millionaire_room_totals
 			(id, room_id, seat, games_played, games_won, total_money, best_level, best_amount, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, now())
 		ON CONFLICT (room_id, seat) DO UPDATE SET
-			games_played = room_totals.games_played + EXCLUDED.games_played,
-			games_won    = room_totals.games_won    + EXCLUDED.games_won,
-			total_money  = room_totals.total_money  + EXCLUDED.total_money,
-			best_level   = GREATEST(room_totals.best_level,  EXCLUDED.best_level),
-			best_amount  = GREATEST(room_totals.best_amount, EXCLUDED.best_amount),
+			games_played = millionaire_room_totals.games_played + EXCLUDED.games_played,
+			games_won    = millionaire_room_totals.games_won    + EXCLUDED.games_won,
+			total_money  = millionaire_room_totals.total_money  + EXCLUDED.total_money,
+			best_level   = GREATEST(millionaire_room_totals.best_level,  EXCLUDED.best_level),
+			best_amount  = GREATEST(millionaire_room_totals.best_amount, EXCLUDED.best_amount),
 			updated_at   = now()`,
 		t.ID, t.RoomID, t.Seat, t.GamesPlayed, t.GamesWon, t.TotalMoney, t.BestLevel, t.BestAmount)
 	return err
@@ -63,6 +63,6 @@ func (r *roomTotalsRepo) AccumulateSeat(ctx context.Context, t *models.RoomTotal
 func (r *roomTotalsRepo) GetRoomTotals(ctx context.Context, roomID string) ([]models.RoomTotal, error) {
 	var rows []models.RoomTotal
 	err := r.db.Query(ctx, &rows,
-		"SELECT * FROM room_totals WHERE room_id = $1 ORDER BY seat", roomID)
+		"SELECT * FROM millionaire_room_totals WHERE room_id = $1 ORDER BY seat", roomID)
 	return rows, err
 }

@@ -90,7 +90,7 @@ func (r *questionRepo) CountByTier(ctx context.Context, difficulty string) (int,
 		Count int `ksql:"count"`
 	}
 	err := r.db.QueryOne(ctx, &row,
-		"SELECT count(*) AS count FROM questions WHERE difficulty = $1 AND source = 'opentdb'", difficulty)
+		"SELECT count(*) AS count FROM millionaire_questions WHERE difficulty = $1 AND source = 'opentdb'", difficulty)
 	return row.Count, err
 }
 
@@ -98,7 +98,7 @@ func (r *questionRepo) CountByCategory(ctx context.Context, category string) (in
 	var row struct {
 		Count int `ksql:"count"`
 	}
-	err := r.db.QueryOne(ctx, &row, "SELECT count(*) AS count FROM questions WHERE category = $1", category)
+	err := r.db.QueryOne(ctx, &row, "SELECT count(*) AS count FROM millionaire_questions WHERE category = $1", category)
 	return row.Count, err
 }
 
@@ -107,13 +107,13 @@ func (r *questionRepo) CountRated(ctx context.Context) (int, error) {
 		Count int `ksql:"count"`
 	}
 	err := r.db.QueryOne(ctx, &row,
-		"SELECT count(*) AS count FROM questions WHERE strength IS NOT NULL")
+		"SELECT count(*) AS count FROM millionaire_questions WHERE strength IS NOT NULL")
 	return row.Count, err
 }
 
 func (r *questionRepo) ListAll(ctx context.Context) ([]models.Question, error) {
 	var questions []models.Question
-	err := r.db.Query(ctx, &questions, "SELECT * FROM questions")
+	err := r.db.Query(ctx, &questions, "SELECT * FROM millionaire_questions")
 	return questions, err
 }
 
@@ -127,7 +127,7 @@ func (r *questionRepo) RandomByTier(ctx context.Context, difficulty string, limi
 	// source = 'opentdb': M6 round-1 review — the legacy tier pool is the
 	// VETTED OpenTDB corpus only; OTQA rows carry the same synthetic
 	// difficulty and must never be picked pre-labeling.
-	query := "SELECT * FROM questions WHERE difficulty = $1 AND source = 'opentdb'"
+	query := "SELECT * FROM millionaire_questions WHERE difficulty = $1 AND source = 'opentdb'"
 	args := []interface{}{difficulty}
 	if len(excludeQuestionIDs) > 0 {
 		// Explicit text[] cast: pgx sends the slice untyped otherwise
@@ -161,7 +161,7 @@ func (r *questionRepo) RandomByRankBand(ctx context.Context, lo, hi int, exclude
 FROM (
     SELECT id, question, options, correct_index, difficulty, category, source, created_at, strength,
            row_number() OVER (ORDER BY strength, id) AS rn
-    FROM questions
+    FROM millionaire_questions
     WHERE strength IS NOT NULL
       -- M10 fix: wwtbam rows live ONLY in their strict per-level pools
       -- (strength == level); a rank band never guarantees that.
@@ -207,7 +207,7 @@ func (r *questionRepo) RandomByCasual(ctx context.Context, maxStrength, limit in
 		patterns = append(patterns, p+"%")
 	}
 	query := `SELECT id, question, options, correct_index, difficulty, category, source, created_at, strength
-FROM questions
+FROM millionaire_questions
 WHERE strength BETWEEN 1 AND $1
   -- M10 fix: the casual blend must only mix OTHER sources' rows at
   -- levels 1–3 (the S2 rule); wwtbam rows are served strictly at
@@ -244,7 +244,7 @@ WHERE strength BETWEEN 1 AND $1
 // limit.
 func (r *questionRepo) RandomByFailSafeCasual(ctx context.Context, categories []string, limit int, excludeQuestionIDs []string) ([]models.Question, error) {
 	query := `SELECT id, question, options, correct_index, difficulty, category, source, created_at, strength
-FROM questions
+FROM millionaire_questions
 WHERE difficulty = 'easy' AND source = 'opentdb' AND category = ANY($1::text[])` + "\n"
 	args := []interface{}{categories}
 	if len(excludeQuestionIDs) > 0 {
@@ -271,7 +271,7 @@ func (r *questionRepo) CountBySourceLevel(ctx context.Context, source string, le
 		Count int `ksql:"count"`
 	}
 	err := r.db.QueryOne(ctx, &row,
-		"SELECT count(*) AS count FROM questions WHERE source = $1 AND strength = $2",
+		"SELECT count(*) AS count FROM millionaire_questions WHERE source = $1 AND strength = $2",
 		source, level)
 	return row.Count, err
 }
@@ -284,7 +284,7 @@ func (r *questionRepo) CountBySourceLevel(ctx context.Context, source string, le
 func (r *questionRepo) RandomBySourceLevel(ctx context.Context, source string, level int, limit int, excludeQuestionIDs []string) ([]models.Question, error) {
 	var questions []models.Question
 	query := `SELECT id, question, options, correct_index, difficulty, category, source, created_at, strength
-FROM questions
+FROM millionaire_questions
 WHERE source = $1 AND strength = $2` + "\n"
 	args := []interface{}{source, level}
 	if len(excludeQuestionIDs) > 0 {
@@ -306,6 +306,6 @@ func (r *questionRepo) CountBySource(ctx context.Context, source string) (int, e
 		Count int `ksql:"count"`
 	}
 	err := r.db.QueryOne(ctx, &row,
-		"SELECT count(*) AS count FROM questions WHERE source = $1", source)
+		"SELECT count(*) AS count FROM millionaire_questions WHERE source = $1", source)
 	return row.Count, err
 }

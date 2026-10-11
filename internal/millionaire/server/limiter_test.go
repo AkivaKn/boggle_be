@@ -6,10 +6,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/gin-gonic/gin"
 	"boggle-api/internal/app"
 	"boggle-api/internal/millionaire/handler"
 	"boggle-api/internal/millionaire/models"
+	"github.com/gin-gonic/gin"
 )
 
 // rejectRoomService is a stub RoomService whose lookups always miss, so
@@ -50,7 +50,11 @@ func newLimitTestServer(t *testing.T) *gin.Engine {
 		generalLimit: limiters.General,
 		strictLimit:  limiters.Strict,
 	}
-	engine := gin.New()
+	// Build the engine exactly as internal/app does in production: the
+	// shared shell (which owns /health + CORS) plus this game's module. The
+	// limiter assertions below therefore exercise the REAL surface, not a
+	// hand-rolled stand-in.
+	engine := app.NewEngine([]string{"http://localhost:5177"})
 	m.RegisterRoutes(engine)
 	return engine
 }
@@ -128,8 +132,8 @@ func TestStrictLimiterWiringShape(t *testing.T) {
 		"POST /api/millionaire/rooms/:code/continue",
 		"POST /api/millionaire/rooms/:code/start",
 		"POST /api/millionaire/rooms/:code/replay",
-		"GET /ws/rooms",
-		"GET /ws/rooms/:code",
+		"GET /ws/millionaire/rooms",
+		"GET /ws/millionaire/rooms/:code",
 		"GET /health",
 	} {
 		if !seen[want] {

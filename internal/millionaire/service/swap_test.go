@@ -148,7 +148,7 @@ func TestSwapIsPerSeatOnly(t *testing.T) {
 		QID string `ksql:"qid"`
 	}
 	if err := db.QueryOne(ctx, &row,
-		"SELECT question_id AS qid FROM room_questions WHERE room_id = $1 AND level = 1 AND variant = 2",
+		"SELECT question_id AS qid FROM millionaire_room_questions WHERE room_id = $1 AND level = 1 AND variant = 2",
 		room.ID); err != nil {
 		t.Fatal(err)
 	}
@@ -392,7 +392,7 @@ func TestSwapOnePerSeatPerLevel(t *testing.T) {
 	first := seatQuestion(t, g, room.ID, 1, 1)
 
 	// Hand the lifeline back so only the per-level ledger can refuse.
-	if _, err := db.Exec(ctx, "UPDATE players SET lifelines_left = $1 WHERE room_id = $2 AND seat = 1",
+	if _, err := db.Exec(ctx, "UPDATE millionaire_players SET lifelines_left = $1 WHERE room_id = $2 AND seat = 1",
 		models.DefaultLifelinesLeft, room.ID); err != nil {
 		t.Fatalf("restoring lifelines_left: %v", err)
 	}

@@ -250,9 +250,9 @@ func createTestRoom(t *testing.T, ctx context.Context, db ksql.DB, rooms RoomSer
 	}
 	t.Cleanup(func() {
 		dctx := context.Background()
-		_, _ = db.Exec(dctx, "DELETE FROM room_questions WHERE room_id = $1", room.ID)
-		_, _ = db.Exec(dctx, "DELETE FROM players WHERE room_id = $1", room.ID)
-		_, _ = db.Exec(dctx, "DELETE FROM rooms WHERE id = $1", room.ID)
+		_, _ = db.Exec(dctx, "DELETE FROM millionaire_room_questions WHERE room_id = $1", room.ID)
+		_, _ = db.Exec(dctx, "DELETE FROM millionaire_players WHERE room_id = $1", room.ID)
+		_, _ = db.Exec(dctx, "DELETE FROM millionaire_rooms WHERE id = $1", room.ID)
 	})
 
 	ps := []models.Player{}
@@ -447,7 +447,7 @@ func TestStartGamePicksAndPersists(t *testing.T) {
 	}
 
 	var rqs []models.RoomQuestion
-	if err := db.Query(ctx, &rqs, "SELECT * FROM room_questions WHERE room_id = $1 ORDER BY level, variant", room.ID); err != nil {
+	if err := db.Query(ctx, &rqs, "SELECT * FROM millionaire_room_questions WHERE room_id = $1 ORDER BY level, variant", room.ID); err != nil {
 		t.Fatalf("reading room_questions: %v", err)
 	}
 	if len(rqs) != 30 {
@@ -473,7 +473,7 @@ func TestStartGamePicksAndPersists(t *testing.T) {
 			Source     string `ksql:"source"`
 			Strength   *int   `ksql:"strength"`
 		}
-		if err := db.QueryOne(ctx, &row, "SELECT difficulty, source, strength FROM questions WHERE id = $1", rq.QuestionID); err != nil {
+		if err := db.QueryOne(ctx, &row, "SELECT difficulty, source, strength FROM millionaire_questions WHERE id = $1", rq.QuestionID); err != nil {
 			t.Fatalf("reading question %s: %v", rq.QuestionID, err)
 		}
 		if row.Source == WWTBAMSource {
@@ -494,7 +494,7 @@ func TestStartGamePicksAndPersists(t *testing.T) {
 		QID string `ksql:"qid"`
 		N   int    `ksql:"n"`
 	}
-	if err := db.Query(ctx, &dupes, "SELECT question_id AS qid, count(*) AS n FROM room_questions WHERE room_id = $1 GROUP BY question_id HAVING count(*) > 1", room.ID); err != nil {
+	if err := db.Query(ctx, &dupes, "SELECT question_id AS qid, count(*) AS n FROM millionaire_room_questions WHERE room_id = $1 GROUP BY question_id HAVING count(*) > 1", room.ID); err != nil {
 		t.Fatalf("dup query: %v", err)
 	}
 	if len(dupes) != 0 {

@@ -47,7 +47,7 @@ func playerRowsOf(t *testing.T, db ksql.DB, roomID string) []struct {
 		Lifelines    string `ksql:"lifelines_left"`
 	}
 	if err := db.Query(context.Background(), &rows,
-		"SELECT seat, status, amount, level_reached, lifelines_left FROM players WHERE room_id = $1 ORDER BY seat",
+		"SELECT seat, status, amount, level_reached, lifelines_left FROM millionaire_players WHERE room_id = $1 ORDER BY seat",
 		roomID); err != nil {
 		t.Fatalf("loading players: %v", err)
 	}

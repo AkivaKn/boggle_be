@@ -50,7 +50,7 @@ func (s *roomService) GenerateBoard(ctx context.Context, roomID string) (*models
 	board := &models.Board{
 		ID:        id.String(),
 		RoomID:    roomID,
-		Cells:     generateBoggleBoard(), 
+		Cells:     generateBoggleBoard(),
 		EndsAt:    time.Now().UTC().Add(3 * time.Minute),
 		CreatedAt: time.Now().UTC(),
 	}

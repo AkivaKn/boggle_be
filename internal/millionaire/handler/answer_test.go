@@ -167,7 +167,7 @@ func correctIndexFromDB(t *testing.T, db ksql.DB, roomID string, level int) int 
 		Idx int `ksql:"idx"`
 	}
 	if err := db.QueryOne(context.Background(), &row,
-		"SELECT shuffled_correct_index AS idx FROM room_questions WHERE room_id = $1 AND level = $2 AND variant = 1",
+		"SELECT shuffled_correct_index AS idx FROM millionaire_room_questions WHERE room_id = $1 AND level = $2 AND variant = 1",
 		roomID, level); err != nil {
 		t.Fatalf("reading shuffled_correct_index: %v", err)
 	}

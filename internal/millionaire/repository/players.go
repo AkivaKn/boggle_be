@@ -19,7 +19,7 @@ type PlayerRepository interface {
 	// guarded UPDATE (M5-review finding 2) removes the lifeline from the
 	// jsonb array ONLY when it is still there:
 	//
-	//	UPDATE players
+	//	UPDATE millionaire_players
 	//	SET lifelines_left = lifelines_left - $2::jsonb
 	//	WHERE id = $1 AND lifelines_left @> $2::jsonb
 	//
@@ -52,27 +52,27 @@ func (r *playerRepo) InsertPlayer(ctx context.Context, p *models.Player) error {
 func (r *playerRepo) GetPlayerByToken(ctx context.Context, roomID string, token string) (*models.Player, error) {
 	var p models.Player
 	err := r.db.QueryOne(ctx, &p,
-		"SELECT * FROM players WHERE room_id = $1 AND token = $2", roomID, token)
+		"SELECT * FROM millionaire_players WHERE room_id = $1 AND token = $2", roomID, token)
 	return &p, err
 }
 
 func (r *playerRepo) UpdateStatus(ctx context.Context, playerID string, status string) error {
-	_, err := r.db.Exec(ctx, "UPDATE players SET status = $1 WHERE id = $2", status, playerID)
+	_, err := r.db.Exec(ctx, "UPDATE millionaire_players SET status = $1 WHERE id = $2", status, playerID)
 	return err
 }
 
 func (r *playerRepo) UpdateAmount(ctx context.Context, playerID string, amount int) error {
-	_, err := r.db.Exec(ctx, "UPDATE players SET amount = $1 WHERE id = $2", amount, playerID)
+	_, err := r.db.Exec(ctx, "UPDATE millionaire_players SET amount = $1 WHERE id = $2", amount, playerID)
 	return err
 }
 
 func (r *playerRepo) UpdateLevelReached(ctx context.Context, playerID string, levelReached int) error {
-	_, err := r.db.Exec(ctx, "UPDATE players SET level_reached = $1 WHERE id = $2", levelReached, playerID)
+	_, err := r.db.Exec(ctx, "UPDATE millionaire_players SET level_reached = $1 WHERE id = $2", levelReached, playerID)
 	return err
 }
 
 func (r *playerRepo) UpdateLifelinesLeft(ctx context.Context, playerID string, lifelinesLeft string) error {
-	_, err := r.db.Exec(ctx, "UPDATE players SET lifelines_left = $1 WHERE id = $2", lifelinesLeft, playerID)
+	_, err := r.db.Exec(ctx, "UPDATE millionaire_players SET lifelines_left = $1 WHERE id = $2", lifelinesLeft, playerID)
 	return err
 }
 
@@ -84,7 +84,7 @@ func (r *playerRepo) UpdateLifelinesLeft(ctx context.Context, playerID string, l
 // (game.ValidLifelines upstream).
 func (r *playerRepo) SpendLifeline(ctx context.Context, playerID, name string) (int64, error) {
 	res, err := r.db.Exec(ctx,
-		"UPDATE players SET lifelines_left = lifelines_left - $2::text WHERE id = $1 AND lifelines_left @> $3::jsonb",
+		"UPDATE millionaire_players SET lifelines_left = lifelines_left - $2::text WHERE id = $1 AND lifelines_left @> $3::jsonb",
 		playerID, name, `"`+name+`"`)
 	if err != nil {
 		return -1, err
@@ -94,7 +94,7 @@ func (r *playerRepo) SpendLifeline(ctx context.Context, playerID, name string) (
 
 func (r *playerRepo) GetPlayersByRoom(ctx context.Context, roomID string) ([]models.Player, error) {
 	var players []models.Player
-	err := r.db.Query(ctx, &players, "SELECT * FROM players WHERE room_id = $1 ORDER BY seat", roomID)
+	err := r.db.Query(ctx, &players, "SELECT * FROM millionaire_players WHERE room_id = $1 ORDER BY seat", roomID)
 	return players, err
 }
 
@@ -103,7 +103,7 @@ func (r *playerRepo) GetPlayersByRoom(ctx context.Context, roomID string) ([]mod
 // as text and cast — never user-controlled content.
 func (r *playerRepo) ResetRoomPlayers(ctx context.Context, roomID string, lifelinesLeft string) error {
 	_, err := r.db.Exec(ctx,
-		"UPDATE players SET status = 'active', amount = 0, level_reached = 0, lifelines_left = $1::jsonb WHERE room_id = $2",
+		"UPDATE millionaire_players SET status = 'active', amount = 0, level_reached = 0, lifelines_left = $1::jsonb WHERE room_id = $2",
 		lifelinesLeft, roomID)
 	return err
 }

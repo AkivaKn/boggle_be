@@ -362,7 +362,7 @@ func TestCasualPoolGate50RoomsL1to3Rule(t *testing.T) {
 			Strength *int   `ksql:"strength"`
 		}
 		if err := db.Query(ctx, &rows,
-			"SELECT id, category, source, strength FROM questions WHERE id::text = ANY($1::text[])", picks); err != nil {
+			"SELECT id, category, source, strength FROM millionaire_questions WHERE id::text = ANY($1::text[])", picks); err != nil {
 			t.Fatalf("room %d: contract read failed: %v", room, err)
 		}
 		if len(rows) != len(picks) {
@@ -389,7 +389,7 @@ func TestCasualPoolGate50RoomsL1to3Rule(t *testing.T) {
 		Source   string `ksql:"source"`
 	}
 	if err := db.Query(ctx, &l1rows,
-		"SELECT id, category, source FROM questions WHERE id::text = ANY($1::text[])", l1IDs); err != nil {
+		"SELECT id, category, source FROM millionaire_questions WHERE id::text = ANY($1::text[])", l1IDs); err != nil {
 		t.Fatal(err)
 	}
 	for _, r := range l1rows {
