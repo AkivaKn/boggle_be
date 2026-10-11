@@ -1,4 +1,13 @@
-version: '3.8'
+# M-C — the merged games stack. ONE backend binary, ONE database, ONE dev FE
+# server, for every game. The old per-game experiment (Boggle on 5435/8080/5173,
+# Millionaire on 5436/8085/5177) retires here.
+#
+# Both games share the database by TABLE PREFIX, not by separate databases, so
+# a single migrations mount brings up both schemas on a fresh volume
+# (000 is a no-op when there is nothing to rename; 001/002 create the prefixed
+# schemas; 003 adds Boggle's room codes).
+name: games
+
 services:
   app:
     build:
@@ -8,8 +17,13 @@ services:
       - ../:/workspace:cached
     command: sleep infinity
     environment:
-      - DATABASE_URL=postgres://devuser:devpassword@db:5432/boggle?sslmode=disable
-      - ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+      # ONE database for both games — the tables are namespaced
+      # (boggle_* / millionaire_*), never separated by database.
+      - DATABASE_URL=postgres://devuser:devpassword@db:5432/games?sslmode=disable
+      # The hub serves the FE from one dev origin (5173).
+      - ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,http://host.docker.internal:5173
+    ports:
+      - "8080:8080" # ONE API for every game: /api/boggle/*, /api/millionaire/*
     depends_on:
       - db
 
@@ -19,12 +33,16 @@ services:
     environment:
       POSTGRES_USER: devuser
       POSTGRES_PASSWORD: devpassword
-      POSTGRES_DB: boggle
+      POSTGRES_DB: games
     ports:
-      - "5435:5432" # Uses 5435 locally to prevent conflicts with your Linux host
+      - "5435:5432"
     volumes:
       - pg-data:/var/lib/postgresql/data
-      - ../migrations:/docker-entrypoint-initdb.d # Auto-runs SQL migrations on first start
-
+      # Every migration runs on FIRST BOOT only. On an existing volume,
+      # apply new files by hand (see README "Migrations").
+      - ../migrations:/docker-entrypoint-initdb.d
+      # The WWTBAM corpus is imported by the one-shot seeding command
+      # (see README "First boot"), not by the DB init hook: the importer
+      # dedupes against the live corpus and reports what it added.
 volumes:
   pg-data:

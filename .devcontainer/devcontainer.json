@@ -1,5 +1,5 @@
 {
-	"name": "Gin Boggle API",
+	"name": "Games API (Boggle + Millionaire)",
 	"dockerComposeFile": "docker-compose.yml",
 	"service": "app",
 	"workspaceFolder": "/workspace",
