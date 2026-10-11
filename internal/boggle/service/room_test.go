@@ -84,7 +84,7 @@ func (f *fakeRepo) GetLatestBoard(_ context.Context, roomID string) (*models.Boa
 var codeRe = regexp.MustCompile(`^[A-Z]{3,}-[A-Z]{3,}-[2-9][2-9]$`)
 
 // TestCreateRoomAssignsShareableCode: every Boggle room carries a code in the
-// shared WORD-WORD-DD format (Boggle has no solo mode, so there is no '' case).
+// shared WORD-WORD-DD format (Boggle has no solo mode, so there is no ” case).
 func TestCreateRoomAssignsShareableCode(t *testing.T) {
 	svc := NewRoomService(newFakeRepo())
 	room, err := svc.CreateRoom(context.Background())

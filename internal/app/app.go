@@ -32,18 +32,40 @@ import (
 	"github.com/vingarcia/ksql/adapters/kpgx"
 )
 
-// Rate limits shared by both games (the values each game already used —
-// this is a move, not a policy change):
-//   - general: 100/min on each game's REST group;
-//   - strict: 10/min on the rate-sensitive gameplay WRITES (Millionaire's
-//     answer/walk/lifeline/continue/start/replay; Boggle's board generate).
+// Rate limits shared by both games.
+//
+// THEY WERE SIZED FOR BOGGLE ALONE, AND NOBODY RE-SIZED THEM FOR MILLIONAIRE.
+// Boggle has exactly ONE write route (generate a board), so its original
+// 10/min strict limit was never a problem. Millionaire reused that same
+// limiter across SIX routes, and the hold-until-continue pacing fires a
+// `continue` after EVERY answer — so one honest solo game costs:
+//
+//	15 answer + 15 continue + up to 3 lifeline + 1 walk  ≈  34 writes
+//
+// …all out of ONE shared 10/min budget, keyed by client IP. A brisk player
+// hit the ceiling around level 5 and started seeing 429s mid-game, and two
+// players on one wifi shared a single budget (user report). It was never an
+// abuse problem; it was a mis-sized one.
+//
+// The fix is headroom, not a re-architecture:
+//   - strict: 300/min on the gameplay WRITES. Still ~4× faster than any human
+//     can play, so a flood is still throttled, but a full 15-level game can no
+//     longer exhaust the budget.
+//   - general: 600/min. This one matters as much as the strict one: it sits on
+//     the whole REST group, so BOTH middlewares run on a gameplay POST and the
+//     EFFECTIVE ceiling is the lower of the two. Raising strict alone would have
+//     left 100/min silently binding.
 //
 // Both are process-local in-memory stores: counters reset on restart and are
 // not shared across replicas (the single-process deployment assumption both
-// games already documented).
+// games already documented). Each game gets its OWN store, so one game's
+// traffic cannot spend another's budget.
+// Exported so the limiter test can assert against the CONFIGURED budget
+// rather than a hard-coded number — the old test hard-coded 10 and silently
+// stopped testing anything the moment the limit moved.
 const (
-	generalLimitPerMinute = 100
-	strictLimitPerMinute  = 10
+	GeneralLimitPerMinute = 600
+	StrictLimitPerMinute  = 300
 )
 
 // Limiters is the pair of gin middlewares a game module mounts on its own
@@ -59,9 +81,9 @@ type Limiters struct {
 func NewLimiters() Limiters {
 	return Limiters{
 		General: mgin.NewMiddleware(limiter.New(memory.NewStore(),
-			limiter.Rate{Limit: generalLimitPerMinute, Period: time.Minute})),
+			limiter.Rate{Limit: GeneralLimitPerMinute, Period: time.Minute})),
 		Strict: mgin.NewMiddleware(limiter.New(memory.NewStore(),
-			limiter.Rate{Limit: strictLimitPerMinute, Period: time.Minute})),
+			limiter.Rate{Limit: StrictLimitPerMinute, Period: time.Minute})),
 	}
 }
 

@@ -9,6 +9,7 @@ import (
 	"boggle-api/internal/app"
 	"boggle-api/internal/millionaire/handler"
 	"boggle-api/internal/millionaire/models"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -69,13 +70,17 @@ func burst(t *testing.T, r *gin.Engine, path, ip string) int {
 }
 
 // TestStrictLimiterGuardsGameplayCommands drives the M8-wired routes:
-//   - the first 10 POSTs inside the strict 10/min window reach the
-//     handler (404 — unknown room; the point is the limiter PASSED them),
-//     spread over all four gameplay commands;
-//   - the 11th from the SAME client IP is throttled 429 (the budget is
-//     shared across answer/walk/lifeline/continue — one limiter, one
-//     in-memory store, one process);
+//   - every request inside the strict window reaches the handler (404 —
+//     unknown room; the point is the limiter PASSED it), spread across all
+//     six gameplay commands;
+//   - the request AFTER the budget from the SAME client IP is throttled 429
+//     (one limiter, one in-memory store, one process, shared across all six);
 //   - a DIFFERENT client IP is a separate budget (still gets through).
+//
+// The budget is read from app.StrictLimitPerMinute, NOT hard-coded. It used
+// to be hard-coded at 10 — which is how a full solo game (~34 writes, because
+// `continue` fires after every answer) could exhaust the budget mid-game and
+// 429 a real player, while this test still passed.
 func TestStrictLimiterGuardsGameplayCommands(t *testing.T) {
 	engine := newLimitTestServer(t)
 
@@ -89,13 +94,14 @@ func TestStrictLimiterGuardsGameplayCommands(t *testing.T) {
 		"/api/millionaire/rooms/ZZZNOPE/replay",
 	}
 
-	for i := 0; i < 10; i++ {
+	budget := app.StrictLimitPerMinute
+	for i := 0; i < budget; i++ {
 		if code := burst(t, engine, routes[i%len(routes)], "10.1.1.1"); code != 404 {
 			t.Fatalf("request %d (%s): code %d, want 404 (under-limit request must reach the handler)", i+1, routes[i%len(routes)], code)
 		}
 	}
 	if code := burst(t, engine, routes[0], "10.1.1.1"); code != 429 {
-		t.Fatalf("11th request from same IP: code %d, want 429 (strict 10/min)", code)
+		t.Fatalf("request %d from same IP: code %d, want 429 (strict %d/min)", budget+1, code, budget)
 	}
 
 	if code := burst(t, engine, routes[1], "10.1.1.2"); code != 404 {
