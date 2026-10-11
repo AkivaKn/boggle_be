@@ -1186,3 +1186,41 @@ func TestTimeoutRetryReArm(t *testing.T) {
 		t.Fatalf("game_over emitted %d times, want exactly 1", c)
 	}
 }
+
+// TestWalkAfterCorrectAnswerBanks (adversarial review finding 2): the WALK
+// AWAY affordance showed the player's current stake, but the server refused
+// the walk for the rest of any level they had already answered — so after a
+// CORRECT answer (the only case where the seat is still active) the button
+// was a dead end. Walking now banks what the correct answer secured and ends
+// the run, exactly as walking before answering would.
+func TestWalkAfterCorrectAnswerBanks(t *testing.T) {
+	ctx := context.Background()
+	db := newServiceTestDB(t)
+	g, n, rooms, players := newTestGame(t, db)
+	room, ps := createTestRoom(t, ctx, db, rooms, players, "solo", 1)
+	if err := g.StartGame(ctx, room, ps); err != nil {
+		t.Fatal(err)
+	}
+
+	answerCorrectly(t, ctx, g, players, room.ID, ps[0])
+	if st := reloadPlayer(t, ctx, players, ps[0]); st.Status != "active" {
+		t.Fatalf("after a correct answer the seat must still be active, got %q", st.Status)
+	}
+
+	amount := walkNow(t, ctx, g, players, room.ID, ps[0])
+	if want := WalkAmount(1); amount != want {
+		t.Fatalf("walk-after-correct amount = %d, want the secured %d", amount, want)
+	}
+
+	re := n.eventData("run_ended", -1)
+	if re == nil || fmt.Sprint(re["status"]) != "walked" {
+		t.Fatalf("run_ended = %v, want walked", re)
+	}
+	if _, has := re["correct_index"]; has {
+		t.Fatalf("walk run_ended must NOT carry correct_index: %v", re)
+	}
+	fresh := reloadPlayer(t, ctx, players, ps[0])
+	if fresh.Status != "walked" || fresh.Amount != amount {
+		t.Fatalf("player row = %d/%s, want %d/walked", fresh.Amount, fresh.Status, amount)
+	}
+}

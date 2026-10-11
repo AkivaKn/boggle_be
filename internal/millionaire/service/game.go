@@ -1259,10 +1259,16 @@ func (g *GameService) Walk(ctx context.Context, roomID string, player *models.Pl
 			return 0, sends, gerr
 		}
 		if game.resolved[player.Seat] != nil {
-			// They already answered the current question; the level result
-			// decides their run — walking is no longer allowed.
-			sends, gerr := reject(player, 409, "already answered this level")
-			return 0, sends, gerr
+			// They answered the current question. A WRONG answer has already
+			// ended the run (status != active, rejected above), so reaching
+			// here means they answered CORRECTLY: the level result is banked
+			// and they are free to stop with it. The old guard refused this
+			// ("already answered this level"), which made the WALK AWAY button
+			// a dead end for the rest of the level — the player could see
+			// "WALK AWAY · £100" and be refused by the server. Walking now
+			// banks exactly what WalkAmount(level_reached) says, i.e. the same
+			// money the correct answer secured.
+			log.Printf("Walk: seat %d banking after a correct answer at level %d", player.Seat, player.LevelReached)
 		}
 
 		amount := WalkAmount(player.LevelReached)

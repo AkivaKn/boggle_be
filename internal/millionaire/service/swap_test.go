@@ -143,6 +143,23 @@ func TestSwapIsPerSeatOnly(t *testing.T) {
 		t.Fatalf("swap reset the timer: %v → %v", endsBefore, endsAfter)
 	}
 
+	// PIN THE EMITTED DEADLINE, not just the internal field (adversarial
+	// review finding 1): the FE adopts the echoed `ends_at` VERBATIM and
+	// re-derives its whole countdown from it, so if the swap ever emitted a
+	// fresh `now+budget` while leaving game.endsAt alone, every other test
+	// here would still pass while the swap became a free re-read — the exact
+	// invariant SPEC §1 forbids. Both emissions (the REST `data.ends_at` and
+	// the private `question_swapped.ends_at`) are asserted below.
+	wantEnds := endsBefore.UTC()
+	restEnds, ok := data["ends_at"].(time.Time)
+	if !ok {
+		t.Fatalf("swap REST data.ends_at is %T, want a deadline the FE can adopt", data["ends_at"])
+	}
+	if !restEnds.UTC().Equal(wantEnds) {
+		t.Fatalf("swap REST data.ends_at = %v, want the unchanged deadline %v "+
+			"(a swap must never re-arm the clock)", restEnds.UTC(), wantEnds)
+	}
+
 	// The replacement is the persisted variant-2 realization of level 1.
 	var row struct {
 		QID string `ksql:"qid"`
@@ -167,6 +184,26 @@ func TestSwapIsPerSeatOnly(t *testing.T) {
 	}
 	if hasCorrectIndex(events[0].msg) {
 		t.Fatalf("question_swapped payload leaks correct_index: %v", events[0].msg)
+	}
+	// The WS frame's echoed deadline is pinned too (see the REST assertion
+	// above) — this is the value the FE's Timer renders from verbatim. The
+	// notifier captures the payload pre-marshal, so accept either the
+	// time.Time or its marshalled string form.
+	var wsEnds time.Time
+	switch v := events[0].msg["ends_at"].(type) {
+	case time.Time:
+		wsEnds = v
+	case string:
+		parsed, err := time.Parse(time.RFC3339Nano, v)
+		if err != nil {
+			t.Fatalf("question_swapped.ends_at is not a deadline string: %v", err)
+		}
+		wsEnds = parsed
+	default:
+		t.Fatalf("question_swapped.ends_at is %T, want a deadline", events[0].msg["ends_at"])
+	}
+	if !wsEnds.UTC().Equal(wantEnds) {
+		t.Fatalf("question_swapped.ends_at = %v, want the unchanged deadline %v", wsEnds.UTC(), wantEnds)
 	}
 	used := n.eventData("lifeline_used", 0)
 	if used == nil {
