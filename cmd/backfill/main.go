@@ -13,8 +13,8 @@ import (
 	"log"
 	"os"
 
-	"boggle-api/internal/millionaire/repository"
-	"boggle-api/internal/millionaire/service"
+	"boggle-api/internal/codes"
+	"boggle-api/internal/dberr"
 
 	"github.com/vingarcia/ksql"
 	"github.com/vingarcia/ksql/adapters/kpgx"
@@ -84,11 +84,11 @@ func main() {
 func generateFreeCode(ctx context.Context, db ksql.Provider, roomID string) (string, bool) {
 	const maxAttempts = 10
 	for attempt := 0; attempt < maxAttempts; attempt++ {
-		code := service.NewRoomCode()
+		code := codes.NewRoomCode()
 		if _, err := db.Exec(ctx,
 			"UPDATE millionaire_rooms SET code = $1 WHERE id = $2 AND (code IS NULL OR code = '')",
 			code, roomID); err != nil {
-			if repository.IsUniqueViolation(err) {
+			if dberr.IsUniqueViolation(err) {
 				continue
 			}
 			log.Printf("room %s: code claim: %v", roomID, err)
