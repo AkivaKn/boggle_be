@@ -11,6 +11,10 @@ import (
 type RoomRepository interface {
 	CreateRoom(ctx context.Context, room *models.Room) error
 	GetRoom(ctx context.Context, id string) (*models.Room, error)
+	// M-A2: resolve by the surfaced room CODE (what a friend types). Kept
+	// separate from GetRoom so the WS join can be strictly code-keyed while
+	// the REST resolver still has a uuid fallback.
+	GetRoomByCode(ctx context.Context, code string) (*models.Room, error)
 
 	CreateBoard(ctx context.Context, board *models.Board) error
 	GetLatestBoard(ctx context.Context, roomID string) (*models.Board, error)
@@ -37,6 +41,12 @@ func (r *roomRepo) CreateRoom(ctx context.Context, room *models.Room) error {
 func (r *roomRepo) GetRoom(ctx context.Context, id string) (*models.Room, error) {
 	var room models.Room
 	err := r.db.QueryOne(ctx, &room, "SELECT * FROM boggle_rooms WHERE id = $1", id)
+	return &room, err
+}
+
+func (r *roomRepo) GetRoomByCode(ctx context.Context, code string) (*models.Room, error) {
+	var room models.Room
+	err := r.db.QueryOne(ctx, &room, "SELECT * FROM boggle_rooms WHERE code = $1", code)
 	return &room, err
 }
 

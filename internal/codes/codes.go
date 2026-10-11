@@ -1,4 +1,4 @@
-package service
+package codes
 
 import (
 	"math/rand/v2"
@@ -26,10 +26,15 @@ import (
 // screen, still long enough to be typeable words).
 const codeWordLen = 4
 
-// codeWordsMaxPick caps the collision retry loop: 78 suffix digits ×
+// MaxPick caps the collision retry loop: 78 suffix digits ×
 // (len(codeWords))²  word pairs — the empty-out probability is negligible,
-// so a handful of attempts covers every realistic ledger size.
-const codeWordsMaxPick = 10
+// so a handful of attempts covers every realistic ledger size. Exported
+// because every game's room-creation path retries against its own unique
+// index using this same budget.
+const MaxPick = 10
+
+// codeWordsMaxPick is the unexported alias kept for the package's own tests.
+const codeWordsMaxPick = MaxPick
 
 // codeWords is the curated vocabulary (~150 words; format floor ≥100 is
 // pinned by the unit test so a future edit cannot silently break the

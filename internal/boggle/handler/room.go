@@ -54,7 +54,17 @@ func (h *RoomHandler) checkOrigin(r *http.Request) bool {
 }
 
 func (h *RoomHandler) GenerateBoard(c *gin.Context) {
-	roomID := c.Param("id")
+	// M-A2: `:code` is the surfaced room code; the resolver is CODE-FIRST
+	// with a uuid fallback so an existing creator link (which only ever knew
+	// the uuid) keeps working.
+	ref := c.Param("code")
+	room, _, err := h.service.ResolveRef(c.Request.Context(), ref)
+	if err != nil {
+		log.Printf("Error resolving room %s: %v", ref, err)
+		c.JSON(http.StatusNotFound, gin.H{"error": "Room not found"})
+		return
+	}
+	roomID := room.ID
 
 	board, err := h.service.GenerateBoard(c.Request.Context(), roomID)
 	if err != nil {
@@ -99,6 +109,9 @@ func (h *RoomHandler) CreateAndJoinRoomWS(c *gin.Context) {
 	conn.WriteJSON(gin.H{
 		"event":   "room_created",
 		"room_id": room.ID,
+		// M-A2: the code is the shareable surface — the host reads it out
+		// and the friend types it. The uuid stays internal.
+		"code": room.Code,
 	})
 
 	for {
@@ -111,13 +124,17 @@ func (h *RoomHandler) CreateAndJoinRoomWS(c *gin.Context) {
 }
 
 func (h *RoomHandler) JoinRoomWS(c *gin.Context) {
-	roomID := c.Param("id")
+	// M-A2: the WS join is strictly CODE-keyed (the route param is the code
+	// a friend typed). No uuid fallback here on purpose — a mistyped code
+	// must fail rather than silently resolving to a different room.
+	code := c.Param("code")
 
-	room, board, err := h.service.GetActiveGame(c.Request.Context(), roomID)
+	room, board, err := h.service.GetActiveGameByCode(c.Request.Context(), code)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Room not found"})
 		return
 	}
+	roomID := room.ID
 
 	conn, err := h.upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
@@ -135,6 +152,8 @@ func (h *RoomHandler) JoinRoomWS(c *gin.Context) {
 	state := gin.H{
 		"event":   "room_state",
 		"room_id": room.ID,
+		// M-A2: echoed so a rejoin can confirm it is in the room it thinks.
+		"code": room.Code,
 	}
 
 	if board != nil {

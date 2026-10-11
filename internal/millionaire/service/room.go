@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"boggle-api/internal/codes"
+	"boggle-api/internal/dberr"
 	"boggle-api/internal/millionaire/models"
 	"boggle-api/internal/millionaire/repository"
 
@@ -31,7 +33,7 @@ func NewRoomService(repo repository.RoomRepository) RoomService {
 // (M7, SPEC v1.1): duel rooms get a generated WORD-WORD-DD code from the
 // curated vocabulary — the partial unique index on rooms.code rejects a
 // collision, and the insert retries with a new candidate (see
-// generateRoomCode); solo rooms carry an EMPTY code (codes are surfaced for duels
+// codes.NewRoomCode); solo rooms carry an EMPTY code (codes are surfaced for duels
 // only, §1 solo-instant-play decision), which the same index excludes.
 func (s *roomService) CreateRoom(ctx context.Context, mode string) (*models.Room, error) {
 	// M0 review follow-up, retired: NewV7's error is handled, not discarded.
@@ -47,12 +49,12 @@ func (s *roomService) CreateRoom(ctx context.Context, mode string) (*models.Room
 	}
 	if mode != "solo" {
 		for attempt := 0; ; attempt++ {
-			room.Code = generateRoomCode()
+			room.Code = codes.NewRoomCode()
 			err = s.repo.CreateRoom(ctx, room)
 			if err == nil {
 				return room, nil
 			}
-			if !repository.IsUniqueViolation(err) || attempt >= codeWordsMaxPick {
+			if !dberr.IsUniqueViolation(err) || attempt >= codes.MaxPick {
 				return nil, fmt.Errorf("creating room: %w", err)
 			}
 			// Code collision — regenerated over the loop above.

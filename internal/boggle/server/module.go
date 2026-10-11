@@ -38,12 +38,16 @@ func NewModule(db ksql.DB, origins []string, limiters app.Limiters) *Module {
 func (m *Module) RegisterRoutes(engine *gin.Engine) {
 	api := engine.Group("/api/" + RoutePrefix)
 	{
-		api.POST("/rooms/:id/boards", m.strictLimit, m.roomHandler.GenerateBoard)
+		// M-A2: the REST body route keys on the same `:code` surface as the
+		// WS join, but resolves CODE-FIRST with a uuid fallback (the
+		// creator's own link keeps working).
+		api.POST("/rooms/:code/boards", m.strictLimit, m.roomHandler.GenerateBoard)
 	}
 
 	ws := engine.Group("/ws/" + RoutePrefix)
 	{
 		ws.GET("/rooms", m.roomHandler.CreateAndJoinRoomWS)
-		ws.GET("/rooms/:id", m.roomHandler.JoinRoomWS)
+		// Strictly code-keyed — see the handler.
+		ws.GET("/rooms/:code", m.roomHandler.JoinRoomWS)
 	}
 }
