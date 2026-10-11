@@ -27,17 +27,27 @@ import (
 //     category 'WWTBAM:<src tag>', deduped against the whole corpus; the
 //     second run imports 0.
 //
+//   - `-source opentdb` runs the OpenTDB importer over the vendored slice of
+//     the OpenTDB corpus (CC BY-SA 4.0 — see README): data/opentdb.csv plus
+//     the curated data/opentdb_strengths.csv, which is what gives every row a
+//     real strength so the levels 1–3 casual pool is non-empty. Categories
+//     the casual blacklist forbids are already excluded from the CSV; the
+//     second run imports 0.
+//
 // Usage inside the container (the repo is bind-mounted at /workspace):
 //
 //	go run ./cmd/import                   # OTQA sample, reads /tmp/otqa
 //	go run ./cmd/import -source wwtbam -file data/wwtbam.jsonl
+//	go run ./cmd/import -source opentdb
 //
 // See README "Question engine v2 — import & labeling" and the
 // "WWTBAM corpus" section for the full flows.
 func main() {
-	source := flag.String("source", "", `importer to run: "wwtbam" (reads -file) or "" for the default OTQA sample importer`)
+	source := flag.String("source", "", `importer to run: "wwtbam" (reads -file), "opentdb" (reads -opentdb-file/-opentdb-strengths), or "" for the default OTQA sample importer`)
 	dir := flag.String("otqa-dir", "/tmp/otqa", "OTQA only: directory holding the OpenTriviaQA category files (double-encoded corpus — per-line UTF-8/Windows-1252 sniff; one file per category)")
 	file := flag.String("file", "data/wwtbam.jsonl", "wwtbam only: the converted JSONL seed (one row per question)")
+	opentdbFile := flag.String("opentdb-file", "data/opentdb.csv", "opentdb only: the vendored, decoded OpenTDB CSV (question,answer,category)")
+	opentdbStrengths := flag.String("opentdb-strengths", "data/opentdb_strengths.csv", "opentdb only: the curated strength CSV (question,strength) — without it every row imports UNRATED and stays invisible to the levels 1-3 casual pool")
 	flag.Parse()
 
 	connStr := os.Getenv("DATABASE_URL")
@@ -75,8 +85,15 @@ func main() {
 			log.Fatalf("WWTBAM import failed: %v", err)
 		}
 		log.Printf("wwtbam: %s", stats)
+	case "opentdb":
+		importer := service.NewOpenTDBImporter(repo, *opentdbFile, *opentdbStrengths)
+		stats, err := importer.Run(ctx)
+		if err != nil {
+			log.Fatalf("OpenTDB import failed: %v", err)
+		}
+		log.Printf("opentdb: %s", stats)
 	default:
-		log.Fatalf("unknown source %q (supported: \"\", \"wwtbam\")", *source)
+		log.Fatalf("unknown source %q (supported: \"\", \"wwtbam\", \"opentdb\")", *source)
 	}
 	log.Printf("import complete")
 }

@@ -338,7 +338,24 @@ func TestRandomByTierOpentdbOnly(t *testing.T) {
 		}
 	}
 
-	picked, err := repo.RandomByTier(ctx, "medium", 10, nil)
+	// The clone carries the whole live corpus, and now that corpus holds
+	// hundreds of opentdb 'medium' rows — so "the inserted row was among 10
+	// random picks" is a coin flip, not an assertion. Exclude every OTHER
+	// medium opentdb row first: RandomByTier can then only return the row
+	// under test (or nothing, if the source guard is broken).
+	var pre []struct {
+		ID string `ksql:"id"`
+	}
+	if err := db.Query(ctx, &pre,
+		"SELECT id::text AS id FROM millionaire_questions WHERE difficulty = 'medium' AND source = 'opentdb' AND id::text <> $1", rows[0].id); err != nil {
+		t.Fatalf("listing pre-existing medium opentdb rows: %v", err)
+	}
+	exclude := make([]string, 0, len(pre))
+	for _, r := range pre {
+		exclude = append(exclude, r.ID)
+	}
+
+	picked, err := repo.RandomByTier(ctx, "medium", 10, exclude)
 	if err != nil {
 		t.Fatal(err)
 	}

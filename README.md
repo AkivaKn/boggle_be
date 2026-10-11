@@ -17,7 +17,7 @@ internal/millionaire/          Millionaire: handler, models, repository, server,
 internal/codes/                SHARED WORD-WORD-DD room-code generator (both games)
 internal/dberr/                SHARED unique-violation classification (both games)
 migrations/                    one sequence, table-prefixed per game
-data/                          the WWTBAM question corpus (import seed)
+data/                          the WWTBAM + OpenTDB question corpora (import seeds)
 ```
 
 A game is a **module**: `NewModule(db, origins, limiters)` builds its
@@ -68,16 +68,75 @@ psql "$DATABASE_URL" -f migrations/00X_new_thing.sql
 
 ## First boot — seeding the question corpus
 
-Millionaire needs questions; Boggle does not. The WWTBAM corpus ships in
-`data/wwtbam.jsonl` (11.8k real show questions) and is imported once:
+Millionaire needs questions; Boggle does not. Two corpora are imported, both
+once, both idempotent (each importer dedupes against the live corpus and
+reports what it added, so re-running imports 0):
 
 ```sh
-go run ./cmd/import -source wwtbam -file data/wwtbam.jsonl
+go run ./cmd/import -source wwtbam -file data/wwtbam.jsonl   # 11,450 real show questions
+go run ./cmd/import -source opentdb                          #  1,900 rated OpenTDB questions
 ```
 
-The importer dedupes against the live corpus and reports what it added, so
-re-running it is a no-op. OpenTDB/OTQA corpora and the rating/label pipeline use
-`cmd/seed`, `cmd/label` the same way (see `cmd/*/main.go` flags).
+The **WWTBAM** corpus ships in `data/wwtbam.jsonl` (11.8k real show
+questions); `strength` is the real show level 1–15.
+
+The **OpenTDB** corpus is what makes the levels 1–3 blend real. The game
+flips a coin between `WWTBAM@level` and a "casual" pool that is by
+construction `source <> 'wwtbam'` — with WWTBAM as the only source that pool
+is always empty and the blend silently runs at 100/0. OpenTDB fills it.
+
+### OpenTDB corpus
+
+**Attribution.** The questions come from [OpenTDB](https://opentdb.com),
+licensed **CC BY-SA 4.0**. The per-category CSVs are taken from the
+[QuartzWarrior/OTDB-Source](https://github.com/QuartzWarrior/OTDB-Source)
+mirror and decoded into the vendored `data/opentdb.csv` (1,914 rows). Those
+questions are shared under CC BY-SA 4.0.
+
+Only the categories the casual blacklist allows are vendored — every
+`Entertainment:*` category, `Celebrities` and `Science: Gadgets` are excluded
+by `models.CasualBlacklistOpentdb*`, plus `Mythology` as a product decision
+for the easy band. Kept: Animals, Art, General Knowledge, Geography, History,
+Politics, Science & Nature, Science: Computers, Science: Mathematics, Sports,
+Vehicles. Rebuild the CSV from a mirror checkout with:
+
+```sh
+python3 data/opentdb_build.py <mirror-dir> data/opentdb.csv
+```
+
+| File | What it is |
+|---|---|
+| `data/opentdb.csv` | the vendored, decoded corpus (`question,answer,category`) |
+| `data/opentdb_strengths.csv` | the curated 1–15 ratings, same pub-quiz rubric as `label/rubric.md` |
+
+`data/opentdb_strengths.csv` is what the importer reads: **a row without a
+strength is invisible to the casual pool**, so importing without it (or with
+it missing) buys nothing at levels 1–3.
+
+Upstream OpenTDB rows carry a question and an answer but no options, while
+`millionaire_questions.options` requires exactly four. The importer is the
+adapter: it samples the three distractors from the other answers of the same
+category, rejecting case-folded duplicates and containment matches ("Paris"
+against "Paris, France" would leave two defensible options).
+
+The WWTBAM difficulty ratings are shipped the same way — as data plus an
+applier, because every import run mints fresh UUIDs and a local database state
+is not reproducible:
+
+| File | What it is |
+|---|---|
+| `data/question_strengths.csv` | the WWTBAM ratings (question → strength) |
+| `migrations/1001_apply_question_strengths.sql` | a self-contained applier, keyed by question text |
+
+```sh
+psql "$DATABASE_URL" -f migrations/1001_apply_question_strengths.sql
+```
+
+Both generated files are rebuilt from the live database with
+`python3 data/question_strengths_build.py`.
+
+The OTQA corpus and the rating/label pipeline use `cmd/seed`, `cmd/label` the
+same way (see `cmd/*/main.go` flags).
 
 ## Setup
 
